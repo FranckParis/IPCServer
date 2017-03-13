@@ -1,8 +1,0 @@
-STARTUSER
-admin/chameau
-
-ENDUSER
-STARTUSER
-user/secret
-
-ENDUSER
