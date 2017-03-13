@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 
 /**
  * Created by franck on 3/6/17.
@@ -170,6 +171,14 @@ public class Connection {
                     case "QUIT" :
                         quit = true;
                         comptFails = 3;
+                    break;
+
+                    //Default
+                    default :
+                        System.out.println("Unknown command. Please login first.");
+                        output.println("-ERR POP3 Login Required.");
+                        output.flush();
+                    break;
                 }
 
             } catch (IOException e) {
@@ -204,16 +213,19 @@ public class Connection {
             //User file access
             File file = new File("src/mail/"+ this.connectedUser + ".txt");
             FileReader fileReader = null;
-            try {
-                fileReader = new FileReader(file);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-            BufferedReader bufferedReader = new BufferedReader(fileReader);
-            StringBuffer stringBuffer = new StringBuffer();
-            String line;
+            ArrayList <Integer> listToDelete = new ArrayList<>();
 
             while(this.state.equals("transaction")){
+
+                try {
+                    fileReader = new FileReader(file);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                BufferedReader bufferedReader = new BufferedReader(fileReader);
+                StringBuffer stringBuffer = new StringBuffer();
+                String line;
+
                 try {
                     String query = input.readLine();
                     System.out.println("Query : " + query);
@@ -231,25 +243,113 @@ public class Connection {
                                         bufferedReader.readLine();
                                     }
                                     String mailText = "";
-                                    while((line = bufferedReader.readLine()) != null){
-                                        if(line.equals(".\r\n")){
-                                            System.out.println(" = . found");
-                                        }
+                                    while(!(line = bufferedReader.readLine()).equals(".")){
                                         mailText += line;
-                                        mailText += "\n";
                                     }
-                                    System.out.println(mailText);
+                                    size += mailText.getBytes().length;
                                 }
                             }
                             System.out.println("STAT done for user : "+ this.connectedUser);
                             output.println("+OK "+ nbMails+" "+size);
                             output.flush();
                             break;
+
+                        case "LIST" :
+                            ArrayList <Integer> listMails = new ArrayList<>();
+                            ArrayList <Integer> idMails = new ArrayList<>();
+
+                            //Reading file to count mails
+                            while ((line = bufferedReader.readLine()) != null) {
+                                if(line.equals("----")) {
+
+                                    for(int i = 0; i<4; i++){
+                                        bufferedReader.readLine();
+                                    }
+                                    line = bufferedReader.readLine();
+                                    idMails.add(Integer.parseInt(line.split(" ")[1]));
+
+                                    String mailText = "";
+                                    while(!(line = bufferedReader.readLine()).equals(".")){
+                                        mailText += line;
+                                    }
+                                    listMails.add(mailText.getBytes().length);
+                                }
+                            }
+
+                            System.out.println("LIST done for user : "+ this.connectedUser);
+                            output.println("+OK "+ listMails.size());
+                            for (int i = 0; i<listMails.size(); i++){
+                                output.println(idMails.get(i) +" "+ listMails.get(i));
+                            }
+                            output.flush();
+                        break;
+
+                        case "RETR" :
+                            int id = Integer.parseInt(query.split(" ")[1]);
+                            int cpt = 1;
+                            int sizeRetrieve = 0;
+                            boolean messageFound = false;
+                            String mailData ="";
+
+                            //Reading file to find mail
+                            while ((line = bufferedReader.readLine()) != null && !messageFound) {
+                                mailData="";
+                                if(line.equals("----")) {
+                                    while(!(line = bufferedReader.readLine()).equals(".")){
+                                        if(cpt == 5){
+                                            if(Integer.parseInt(line.split(" ")[1]) == id){
+                                                messageFound = true;
+                                            }
+                                        }
+                                        if (cpt > 6){
+                                            sizeRetrieve += line.getBytes().length;
+                                        }
+                                        mailData += line;
+                                        mailData += "\r\n";
+                                        cpt++;
+                                    }
+                                    cpt = 1;
+                                }
+                            }
+                            if(messageFound){
+                                System.out.println("RETRIEVE "+id+" done for user : "+ this.connectedUser);
+                                output.println("+OK "+ sizeRetrieve + "\r\n" + mailData);
+                                output.flush();
+                                listToDelete.add(id);
+                            }
+                            else{
+                                System.out.println("RETRIEVE "+id+" failed for user : "+ this.connectedUser);
+                                output.println("-ERR POP3 Message not found");
+                                output.flush();
+                            }
+                        break;
+
+                        case "QUIT" :
+                            System.out.println("Disconnecting from server.");
+                            output.println("+OK POP3 Server signing off");
+                            output.flush();
+                            this.state = "closed";
+                            this.update(listToDelete);
+                        break;
+
+                        //Default
+                        default :
+                            System.out.println("Unknown command.");
+                            output.println("-ERR POP3 Unavailable Command.");
+                            output.flush();
+                        break;
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    public void update(ArrayList<Integer> list){
+        System.out.println("Messages to delete : ");
+        for(int i = 0; i<list.size(); i++){
+            System.out.println(list.get(i));
         }
     }
 }

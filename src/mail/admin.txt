@@ -3,7 +3,7 @@ FROM: Jean Jacques GOLDMAN <jjg@test.com>
 TO: admin <admin@test.com>
 SUBJECT: Test
 DATE: Fri, 21 Nov 1997 09:55:06 - 0600
-MESSAGE-ID: <1234@local.machine.example>
+MESSAGE-ID: 1
 
 This is a test message.
 So, test !
@@ -13,7 +13,7 @@ FROM: Bernard LHERMITE <bl@test.com>
 TO: admin <admin@test.com>
 SUBJECT: Test2
 DATE: Fri, 28 Jan 2012 11:55:20 - 0801
-MESSAGE-ID: <1235@local.machine.example>
+MESSAGE-ID: 2
 
 This is another test message.
 This one is a bit longer !
@@ -23,7 +23,7 @@ FROM: Horatio CAINE <hc@test.com>
 TO: admin <admin@test.com>
 SUBJECT: Test3
 DATE: Fri, 31 Jun 2056 16:52:17 - 0802
-MESSAGE-ID: <1236@local.machine.example>
+MESSAGE-ID: 3
 
 This is one more test message.
 Yeah !
@@ -33,6 +33,6 @@ FROM: Horatio CAINE <hc@test.com>
 TO: admin <admin@test.com>
 SUBJECT: Test3
 DATE: Fri, 31 Jun 2056 16:52:17 - 0802
-MESSAGE-ID: <1236@local.machine.example>
+MESSAGE-ID: 4
 
 .
