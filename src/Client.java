@@ -110,7 +110,6 @@ public class Client {
                 this.state = "authorisation";
             break;
 
-
             default:
                 if(line.contains("-ERR POP3 No Such User here")){
                     this.nbAttempts++;
