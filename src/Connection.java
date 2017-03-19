@@ -41,7 +41,7 @@ public class Connection {
         //Connection ready
         System.out.println("New connection to "+ socket.getInetAddress() + " : " + socket.getLocalPort());
         output.println("+OK POP3 Server Ready");
-        output.flush();
+        this.send();
 
         //Authorization
         this.state = "authorization";
@@ -91,7 +91,7 @@ public class Connection {
                             comptFails++;
                             System.out.println("Connection attempt failed : "+ comptFails);
                             output.println("-ERR POP3 No Such User here : "+ username);
-                            output.flush();
+                            this.send();
 
                             try {
                                 fileReader = new FileReader(file);
@@ -120,7 +120,7 @@ public class Connection {
                                     userLine = line;
                                     System.out.println("Connection attempt with username "+username);
                                     output.println("+OK POP3 User Found");
-                                    output.flush();
+                                    this.send();
                                 }
                             }
                         }
@@ -128,7 +128,7 @@ public class Connection {
                             comptFails++;
                             System.out.println("Connection attempt failed (User not Found) : "+ comptFails);
                             output.println("-ERR POP3 No Such User here");
-                            output.flush();
+                            this.send();
 
                             try {
                                 fileReader = new FileReader(file);
@@ -153,9 +153,8 @@ public class Connection {
                                 comptFails++;
                                 System.out.println("User " + username + " : Wrong Password.");
                                 output.println("-ERR POP3 Authentication Failed");
-                                output.flush();
+                                this.send();
                                 this.state = "authorization";
-
                                 try {
                                     fileReader = new FileReader(file);
                                 } catch (FileNotFoundException e) {
@@ -177,7 +176,7 @@ public class Connection {
                     default :
                         System.out.println("Unknown command. Please login first.");
                         output.println("-ERR POP3 Login Required.");
-                        output.flush();
+                        this.send();
                     break;
                 }
 
@@ -190,7 +189,7 @@ public class Connection {
             System.out.println("User " + username + " successfully connected to server.");
             this.connectedUser = username;
             output.println("+OK POP3 Authentication Success");
-            output.flush();
+            this.send();
             this.state = "transaction";
         }
         //Connection failed
@@ -202,7 +201,7 @@ public class Connection {
                 System.out.println("Connection failed : 3 attempts failed.");
             }
             output.println("+OK POP3 Server signing off");
-            output.flush();
+            this.send();
             this.state = "closed";
         }
     }
@@ -251,7 +250,7 @@ public class Connection {
                             }
                             System.out.println("STAT done for user : "+ this.connectedUser);
                             output.println("+OK "+ nbMails+" "+size);
-                            output.flush();
+                            this.send();
                             break;
 
                         case "LIST" :
@@ -281,7 +280,7 @@ public class Connection {
                             for (int i = 0; i<listMails.size(); i++){
                                 output.println(idMails.get(i) +" "+ listMails.get(i));
                             }
-                            output.flush();
+                            this.send();
                         break;
 
                         case "RETR" :
@@ -314,20 +313,20 @@ public class Connection {
                             if(messageFound){
                                 System.out.println("RETRIEVE "+id+" done for user : "+ this.connectedUser);
                                 output.println("+OK "+ sizeRetrieve + "\r\n" + mailData);
-                                output.flush();
+                                this.send();
                                 listToDelete.add(id);
                             }
                             else{
                                 System.out.println("RETRIEVE "+id+" failed for user : "+ this.connectedUser);
                                 output.println("-ERR POP3 Message not found");
-                                output.flush();
+                                this.send();
                             }
                         break;
 
                         case "QUIT" :
                             System.out.println("Disconnecting from server.");
                             output.println("+OK POP3 Server signing off");
-                            output.flush();
+                            this.send();
                             this.state = "closed";
                             this.update(listToDelete);
                         break;
@@ -336,7 +335,7 @@ public class Connection {
                         default :
                             System.out.println("Unknown command.");
                             output.println("-ERR POP3 Unavailable Command.");
-                            output.flush();
+                            this.send();
                         break;
                     }
                 } catch (IOException e) {
@@ -344,6 +343,11 @@ public class Connection {
                 }
             }
         }
+    }
+
+    public void send(){
+        this.output.println("EOS");
+        this.output.flush();
     }
 
     public void update(ArrayList<Integer> list){
