@@ -136,8 +136,8 @@ public class Client {
         }
         if(line.contains("+OK POP3") || line.contains("-ERR POP3")){
             update = updateStatus(line);
-            System.out.println(line);
         }
+        if(!update) System.out.println(line);
         try {
             while (!(line = this.input.readLine()).equals("EOS")){
                 if(!update) System.out.println(line);
