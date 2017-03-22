@@ -1,3 +1,5 @@
+import com.sun.org.apache.xpath.internal.SourceTree;
+
 import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
@@ -38,7 +40,6 @@ public class Client {
             this.output = new PrintWriter(this.clientSocket.getOutputStream());
             this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
             this.ts = this.engage();
-            System.out.println(this.ts);
             if(this.ts != null)
                 this.state = "authorization";
             else
@@ -54,8 +55,7 @@ public class Client {
                     String pass = sentence.split(" ")[2];
 
                     try {
-                        String saltedString = String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest(pass.getBytes())));
-                        System.out.println(saltedString);
+                        String saltedString = String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest((ts+pass).getBytes())));
                         sentence = "APOP "+username+" "+saltedString;
                         this.write(sentence);
                         this.read();
@@ -132,12 +132,12 @@ public class Client {
             break;
 
             default:
-                if(line.startsWith("-ERR POP3 No Such User here")){
+                if(line.contains("-ERR POP3 No Such User here")){
                     this.nbAttempts++;
                     System.out.println("User not found : " + this.nbAttempts + " attempts failed");
                     this.state = "authorization";
                 }
-                else if(line.startsWith("-ERR POP3"))
+                else if(line.contains("-ERR POP3"))
                     System.out.println("ERROR Unavailable Command");
                 else
                     update = false;
@@ -155,10 +155,21 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if(line.startsWith("+OK POP3") || line.startsWith("-ERR POP3")){
+        if(line.contains("+OK POP3") || line.contains("-ERR POP3")){
             update = updateStatus(line);
         }
         if(!update) System.out.println(line);
+
+        readAll(update);
+    }
+
+    private void write(String sentence){
+        this.output.println(sentence);
+        this.output.flush();
+    }
+
+    private void readAll(Boolean update){
+        String line;
         try {
             while (!(line = this.input.readLine()).equals("EOS")){
                 if(!update) System.out.println(line);
@@ -168,12 +179,6 @@ public class Client {
         }
     }
 
-    private void write(String sentence){
-        System.out.println(sentence);
-        this.output.println(sentence);
-        this.output.flush();
-    }
-
     private String engage(){
         String line = "";
         try {
@@ -181,10 +186,13 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if(line.startsWith("+OK POP3 Server Ready")){
+        if(line.contains("+OK POP3 Server Ready")){
             String ts = line.split("<")[1].split(">")[0];
+            readAll(true);
             return ts;
         }
+        System.out.println(line);
+        readAll(false);
         return null;
     }
 

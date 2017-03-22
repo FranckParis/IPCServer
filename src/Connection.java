@@ -1,3 +1,5 @@
+import com.sun.org.apache.xpath.internal.SourceTree;
+
 import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
@@ -71,16 +73,14 @@ public class Connection {
         //Connection variables
         String username = "";
         String password = "";
+        String saltedPassword = "";
 
         //Authentication loop
         while(comptFails < 3 && !matchFound){
             System.out.println("Login : ");
             try {
                 String login = input.readLine();
-                System.out.println(login);
-
                 switch (login.substring(0, 4)){
-
                     //APOP
                     case "APOP" :
                         username = login.split("\\s+")[1];
@@ -90,13 +90,15 @@ public class Connection {
                         while ((line = bufferedReader.readLine()) != null && !matchFound) {
                             if(line.equals("STARTUSER")) {
                                 line = bufferedReader.readLine();
-                                try {
-                                    System.out.println(String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest(password.getBytes()))));
-                                    if (line.equals(username + "/" + String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest(password.getBytes()))))) {
+                                if (line.startsWith(username + "/")){
+                                    try {
+                                        saltedPassword = String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest((ts+(line.split("/")[1])).getBytes())));
+                                    } catch (NoSuchAlgorithmException e) {
+                                        e.printStackTrace();
+                                    }
+                                    if (saltedPassword.equals(password)){
                                         matchFound = true;
                                     }
-                                } catch (NoSuchAlgorithmException e) {
-                                    e.printStackTrace();
                                 }
                             }
                         }
