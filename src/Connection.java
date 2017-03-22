@@ -1,5 +1,9 @@
 import java.io.*;
+import java.math.BigInteger;
 import java.net.Socket;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 /**
@@ -13,6 +17,7 @@ public class Connection {
     private BufferedReader input;
     private String state;
     private String connectedUser;
+    private String ts;
 
     //Constructor
     public Connection (Socket socket){
@@ -40,7 +45,8 @@ public class Connection {
 
         //Connection ready
         System.out.println("New connection to "+ socket.getInetAddress() + " : " + socket.getLocalPort());
-        output.println("+OK POP3 Server Ready");
+        this.ts = System.currentTimeMillis()+ "@"+ socket.getInetAddress();
+        output.println("+OK POP3 Server Ready <"+this.ts+">");
         this.send();
 
         //Authorization
@@ -71,6 +77,8 @@ public class Connection {
             System.out.println("Login : ");
             try {
                 String login = input.readLine();
+                System.out.println(login);
+
                 switch (login.substring(0, 4)){
 
                     //APOP
@@ -82,8 +90,13 @@ public class Connection {
                         while ((line = bufferedReader.readLine()) != null && !matchFound) {
                             if(line.equals("STARTUSER")) {
                                 line = bufferedReader.readLine();
-                                if (line.equals(username + "/" + password)) {
-                                    matchFound = true;
+                                try {
+                                    System.out.println(String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest(password.getBytes()))));
+                                    if (line.equals(username + "/" + String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest(password.getBytes()))))) {
+                                        matchFound = true;
+                                    }
+                                } catch (NoSuchAlgorithmException e) {
+                                    e.printStackTrace();
                                 }
                             }
                         }

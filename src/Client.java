@@ -1,5 +1,8 @@
 import java.io.*;
+import java.math.BigInteger;
 import java.net.Socket;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 
 /**
@@ -14,6 +17,7 @@ public class Client {
     private String hostName;
     private int port;
     private int nbAttempts;
+    private String ts;
 
     //Constructors
     public Client (String hostName, int port){
@@ -21,6 +25,7 @@ public class Client {
         this.port = port;
         this.state = "";
         this.nbAttempts = 0;
+        this.ts = "";
     }
 
     //Methods
@@ -29,20 +34,36 @@ public class Client {
             String sentence;
             BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 
-            this.clientSocket = new Socket("localhost", 3586);
+            this.clientSocket = new Socket(this.hostName, this.port);
             this.output = new PrintWriter(this.clientSocket.getOutputStream());
             this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
-            this.read();
-
-            this.state = "authorisation";
+            this.ts = this.engage();
+            System.out.println(this.ts);
+            if(this.ts != null)
+                this.state = "authorization";
+            else
+                this.state = "stopped";
 
         while(!this.state.equals("stopped")){
             switch(this.state){
-                case "authorisation" :
+                case "authorization" :
                     System.out.println("Please connect by APOP or USER :");
                     sentence = inFromUser.readLine();
-                    this.write(sentence);
-                    this.read();
+
+                    String username = sentence.split(" ")[1];
+                    String pass = sentence.split(" ")[2];
+
+                    try {
+                        String saltedString = String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest(pass.getBytes())));
+                        System.out.println(saltedString);
+                        sentence = "APOP "+username+" "+saltedString;
+                        this.write(sentence);
+                        this.read();
+
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    }
+
                 break;
 
                 case "connection" :
@@ -107,16 +128,16 @@ public class Client {
             case "-ERR POP3 Authentication Failed" :
                 this.nbAttempts++;
                 System.out.println("Authentication Failed : " + this.nbAttempts + " attempts failed");
-                this.state = "authorisation";
+                this.state = "authorization";
             break;
 
             default:
-                if(line.contains("-ERR POP3 No Such User here")){
+                if(line.startsWith("-ERR POP3 No Such User here")){
                     this.nbAttempts++;
                     System.out.println("User not found : " + this.nbAttempts + " attempts failed");
-                    this.state = "authorisation";
+                    this.state = "authorization";
                 }
-                else if(line.contains("-ERR POP3"))
+                else if(line.startsWith("-ERR POP3"))
                     System.out.println("ERROR Unavailable Command");
                 else
                     update = false;
@@ -134,7 +155,7 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if(line.contains("+OK POP3") || line.contains("-ERR POP3")){
+        if(line.startsWith("+OK POP3") || line.startsWith("-ERR POP3")){
             update = updateStatus(line);
         }
         if(!update) System.out.println(line);
@@ -151,6 +172,20 @@ public class Client {
         System.out.println(sentence);
         this.output.println(sentence);
         this.output.flush();
+    }
+
+    private String engage(){
+        String line = "";
+        try {
+            line = this.input.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(line.startsWith("+OK POP3 Server Ready")){
+            String ts = line.split("<")[1].split(">")[0];
+            return ts;
+        }
+        return null;
     }
 
     //Main
