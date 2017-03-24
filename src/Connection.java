@@ -1,11 +1,9 @@
-import com.sun.org.apache.xpath.internal.SourceTree;
-
+import javax.net.ssl.SSLSocket;
 import java.io.*;
 import java.math.BigInteger;
-import java.net.Socket;
+//import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 
 /**
@@ -14,7 +12,7 @@ import java.util.ArrayList;
 public class Connection {
 
     //Attributes
-    private Socket socket;
+    private SSLSocket socket;
     private PrintWriter output;
     private BufferedReader input;
     private String state;
@@ -22,7 +20,8 @@ public class Connection {
     private String ts;
 
     //Constructor
-    public Connection (Socket socket){
+    public Connection (SSLSocket socket){
+
         this.socket = socket;
         try {
             this.input = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));

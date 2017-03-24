@@ -1,10 +1,12 @@
-import com.sun.org.apache.xpath.internal.SourceTree;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
 import java.math.BigInteger;
-import java.net.Socket;
+//import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 
 
 /**
@@ -12,7 +14,7 @@ import java.security.NoSuchAlgorithmException;
  */
 public class Client {
     //Attributes
-    private Socket clientSocket;
+    private SSLSocket clientSocket;
     private PrintWriter output;
     private BufferedReader input;
     private String state;
@@ -36,7 +38,30 @@ public class Client {
             String sentence;
             BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 
-            this.clientSocket = new Socket(this.hostName, this.port);
+            //Socket
+            SSLSocketFactory fact = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            this.clientSocket = (SSLSocket) fact.createSocket(String.valueOf(this.hostName), this.port);
+
+            //Setting ciphers
+            String[] supportedCiphers = clientSocket.getSupportedCipherSuites();
+            ArrayList<String> enabledCiphers = new ArrayList<>();
+
+            //Checking ciphers
+            for (String s : supportedCiphers) {
+                if(s.contains("anon")){
+                    enabledCiphers.add(s);
+                }
+            }
+
+            String[] ciphersToSet = new String[enabledCiphers.size()];
+            ciphersToSet = enabledCiphers.toArray(ciphersToSet);
+
+            this.clientSocket.setEnabledCipherSuites(ciphersToSet);
+            this.clientSocket.setNeedClientAuth(true);
+
+            //this.clientSocket = new Socket(this.hostName, this.port);
+
+            //Streams
             this.output = new PrintWriter(this.clientSocket.getOutputStream());
             this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
             this.ts = this.engage();
