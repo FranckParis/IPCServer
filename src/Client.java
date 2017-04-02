@@ -207,11 +207,11 @@ public class Client {
         this.output.flush();
     }
 
-    private void readAll(Boolean update){
+    private void readAll(Boolean print){
         String line;
         try {
             while (!(line = this.input.readLine()).equals("EOS")){
-                if(!update) System.out.println(line);
+                if(!print) System.out.println(line);
             }
         } catch (IOException e) {
             e.printStackTrace();
