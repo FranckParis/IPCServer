@@ -82,6 +82,7 @@ public class Connection {
                 switch (login.substring(0, 4)){
                     //APOP
                     case "APOP" :
+                        matchFound = false;
                         username = login.split("\\s+")[1];
                         password = login.split("\\s+")[2];
 
@@ -120,6 +121,7 @@ public class Connection {
                     //USER then PASS
                     case "USER" :
                         String userLine = "";
+                        userFound = false;
 
                         username = login.split("\\s+")[1];
                         System.out.println("Username : "+ username);
@@ -160,7 +162,13 @@ public class Connection {
                             System.out.println("pass : "+pass);
                             System.out.println("line : "+userLine);
 
-                            if (userLine.split("/")[1].equals(pass)) {
+                            try {
+                                saltedPassword = String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest((ts+(userLine.split("/")[1])).getBytes())));
+                            } catch (NoSuchAlgorithmException e) {
+                                e.printStackTrace();
+                            }
+
+                            if (saltedPassword.equals(pass)) {
                                 matchFound = true;
                             }
                             else{

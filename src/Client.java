@@ -76,17 +76,24 @@ public class Client {
                     System.out.println("Please connect by APOP or USER :");
                     sentence = inFromUser.readLine();
 
-                    String username = sentence.split(" ")[1];
-                    String pass = sentence.split(" ")[2];
+                    String method = sentence.split(" ")[0];
+                    if(method.equals("APOP")) {
+                        String username = sentence.split(" ")[1];
+                        String pass = sentence.split(" ")[2];
 
-                    try {
-                        String saltedString = String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest((ts+pass).getBytes())));
-                        sentence = "APOP "+username+" "+saltedString;
+                        try {
+                            String saltedString = String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest((ts + pass).getBytes())));
+                            sentence = "APOP " + username + " " + saltedString;
+                            this.write(sentence);
+                            this.read();
+
+                        } catch (NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else{
                         this.write(sentence);
                         this.read();
-
-                    } catch (NoSuchAlgorithmException e) {
-                        e.printStackTrace();
                     }
 
                 break;
@@ -94,8 +101,15 @@ public class Client {
                 case "connection" :
                     System.out.println("Enter your password :");
                     sentence = inFromUser.readLine();
-                    this.write(sentence);
-                    this.read();
+                    try {
+                        String saltedString = String.format("%032x", new BigInteger(1, MessageDigest.getInstance("md5").digest((ts + sentence).getBytes())));
+                        sentence = "USER" + " " + saltedString;
+                        this.write(sentence);
+                        this.read();
+
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    }
                 break;
 
                 case "transaction" :
